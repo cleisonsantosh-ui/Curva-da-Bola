@@ -36,13 +36,14 @@ const ApiService = (() => {
     const client = window.SupabaseClient;
     if (!client) return null;
     try {
+      // Simplificado: Busca jogos que ocorrem dentro do dia especificado no horário de Brasília
+      // Como o banco está em UTC, comparamos com o intervalo equivalente em UTC:
+      // 00:00 BRT = 03:00 UTC | 23:59 BRT = 02:59 UTC (dia seguinte)
       const { data, error } = await client
         .from('matches')
         .select('*')
-        // Ajuste Fuso Horário Brasil (UTC-3): 00:00 no Brasil = 03:00 no UTC do mesmo dia
         .gte('kickoff', `${dateStr}T03:00:00+00:00`)
-        // 23:59 no Brasil = 02:59 no UTC do dia SEGUINTE
-        .lte('kickoff', `${dateStr}T23:59:59-03:00`)
+        .lte('kickoff', `${dateStr}T23:59:59-03:00`) // O Supabase costuma inferir o offset corretamente
         .order('kickoff', { ascending: true });
 
       if (error) { console.error('[Supabase] Erro:', error); return null; }
@@ -97,46 +98,50 @@ const ApiService = (() => {
     return false;
   }
 
-  // 🔄 SYNC ULTIMATE: Pega tudo de Hoje e Amanhã + Ligas BR
+  // 🔄 Sync por data específica (Econômico: 1 requisição)
+  async function syncDate(d) {
+    const key = window.FUT_CONFIG.API_FOOTBALL_KEY;
+    if (!key) return;
+    console.info(`[Sync] Sincronizando data específica: ${d}...`);
+    try {
+      const res = await fetch(`${window.FUT_CONFIG.API_FOOTBALL_BASE}/fixtures?date=${d}`, {
+        headers: { 'x-apisports-key': key }
+      });
+      const json = await res.json();
+      const fixtures = json?.response || [];
+      const brFixtures = fixtures.filter(f => f.league.country === 'Brazil');
+      if (brFixtures.length > 0) {
+        await upsertMatches(brFixtures.map(normFixture));
+        return brFixtures.length;
+      }
+    } catch (e) {
+      console.error(`[Sync] Erro ao sincronizar data ${d}:`, e);
+    }
+    return 0;
+  }
+
+  // 🔄 SYNC ULTIMATE: Pega tudo de Ontem, Hoje e Amanhã
   async function syncLeagues() {
     const key = window.FUT_CONFIG.API_FOOTBALL_KEY;
     if (!key) return ToastService.show('❌ Configure sua API Key!', 'error');
 
-    ToastService.show('⏳ Sincronizando Jogos Brasileiros...', 'info');
+    ToastService.show('⏳ Sincronizando Calendário...', 'info');
     let totalSaved = 0;
 
-    // 1. Tenta Sync Live primeiro para garantir os placares atuais
-    await syncLiveMatches();
-
-    // 2. Puxar por DATA (Ontem, Hoje e Amanhã)
-    const now = Date.now();
     const dates = [
-      new Date(now - 86400000).toLocaleDateString('sv'), // Ontem
-      new Date(now).toLocaleDateString('sv'),            // Hoje
-      new Date(now + 86400000).toLocaleDateString('sv')  // Amanhã
+      window.DateUtils.getBRTDateStr(-1), // Ontem
+      window.DateUtils.getBRTDateStr(0),  // Hoje
+      window.DateUtils.getBRTDateStr(1)   // Amanhã
     ];
 
     for (const d of dates) {
-      console.info(`[Sync] Buscando data: ${d}...`);
-      try {
-        const res = await fetch(`${window.FUT_CONFIG.API_FOOTBALL_BASE}/fixtures?date=${d}`, {
-          headers: { 'x-apisports-key': key }
-        });
-        const json = await res.json();
-        const fixtures = json?.response || [];
-        
-        const brFixtures = fixtures.filter(f => f.league.country === 'Brazil');
-        if (brFixtures.length > 0) {
-          await upsertMatches(brFixtures.map(normFixture));
-          totalSaved += brFixtures.length;
-        }
-      } catch (e) { }
+      totalSaved += await syncDate(d);
     }
 
     if (totalSaved > 0) {
       ToastService.show(`✅ Sucesso! ${totalSaved} partidas sincronizadas.`, 'success');
     } else {
-      ToastService.show('⚠️ Nenhum jogo novo. Verifique sua cota API.', 'warning');
+      ToastService.show('⚠️ Calendário atualizado (nenhum jogo novo).', 'warning');
     }
   }
 
@@ -144,7 +149,7 @@ const ApiService = (() => {
     return await fetchFromSupabase(dateStr) || [];
   }
 
-  return { getMatchesForDate, syncLeagues, normFixture, normaliseStatus };
+  return { getMatchesForDate, syncLeagues, syncLiveMatches, syncDate, normFixture, normaliseStatus };
 })();
 
 window.ApiService = ApiService;

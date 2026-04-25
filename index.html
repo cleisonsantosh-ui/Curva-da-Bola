@@ -18,6 +18,7 @@
   <!-- ── Favicon ────────────────────────────────────────── -->
   <link rel="icon" type="image/png" href="assets/logo.png" />
   <link rel="apple-touch-icon" href="assets/logo.png" />
+  <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#009c3b" />
 
   <!-- ── Open Graph ────────────────────────────────────── -->
@@ -128,7 +129,8 @@
           Jogos de Futebol de Hoje<br />
           <span class="gradient-text">Ao Vivo e Resultados</span>
         </h1>
-        <p class="hero-subtitle">Placar ao vivo minuto a minuto, estatísticas e onde assistir jogos do Brasileirão, Copa do Brasil e Libertadores.</p>
+        <p class="hero-subtitle">Placar ao vivo minuto a minuto, estatísticas e onde assistir jogos do Brasileirão, Copa
+          do Brasil e Libertadores.</p>
       </div>
       <div class="league-filters" id="league-filters" role="group" aria-label="Filtrar por liga">
         <button class="filter-chip active" data-league="all" id="filter-all">Todos</button>
@@ -211,7 +213,8 @@
             style="border-radius:50%;" />
           <span>Curva da Bola</span>
         </div>
-        <p class="footer-copy">Curva da Bola - Acompanhe os resultados dos jogos do brasileirão hoje e os placares em tempo real do seu time: Flamengo, Palmeiras, São Paulo e Corinthians.</p>
+        <p class="footer-copy">Curva da Bola - Acompanhe os resultados dos jogos do brasileirão hoje e os placares em
+          tempo real do seu time: Flamengo, Palmeiras, São Paulo e Corinthians.</p>
         <p class="footer-leagues">Série A · Série B · Copa do Brasil · Libertadores</p>
       </div>
     </div>
@@ -261,6 +264,17 @@
   <script src="js/cards.js" defer></script>
   <script src="js/realtime.js" defer></script>
   <script src="js/app.js" defer></script>
+
+  <!-- PWA Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('[PWA] Service Worker registrado!', reg.scope))
+          .catch(err => console.warn('[PWA] Erro ao registrar SW:', err));
+      });
+    }
+  </script>
 </body>
 
 </html>

@@ -211,19 +211,20 @@ const CardsService = (() => {
     }
   }
 
-  // Render a list of matches into a container
+  // Render a list of matches into a container efficiently
   function renderMatches(containerId, matches) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
-    // Remove skeletons
-    container.querySelectorAll('.skeleton').forEach(el => el.remove());
-
-    if (!matches || matches.length === 0) return;
-
-    matches.forEach((match, i) => {
-      container.insertAdjacentHTML('beforeend', buildCardHtml(match, i));
-    });
+    // Remove skeletons only if there are matches to show
+    if (matches && matches.length > 0) {
+      container.querySelectorAll('.skeleton').forEach(el => el.remove());
+      const htmlString = matches.map((m, i) => buildCardHtml(m, i)).join('');
+      container.innerHTML = htmlString;
+    } else {
+      // If no matches, clear but don't remove if there's an empty state handled elsewhere
+      container.innerHTML = '';
+    }
   }
 
   return { buildCardHtml, renderMatches, updateCardLive, formatTime };

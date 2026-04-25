@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+  <!-- ── SEO Primário ──────────────────────────────────── -->
+  <title>Curva da Bola | Jogos de Hoje, Futebol ao Vivo e Resultados em Tempo Real</title>
+  <meta name="description"
+    content="Resultados dos jogos de hoje no futebol brasileiro, placar ao vivo minuto a minuto e onde assistir aos jogos. Acompanhe Brasileirão, Copa do Brasil e Libertadores." />
+  <meta name="keywords"
+    content="jogo hoje, jogos de hoje, futebol hoje, resultados de hoje, resultado jogo hoje, placar ao vivo, jogos de futebol de hoje, resultados dos jogos de hoje, jogos de hoje ao vivo, jogos de hoje na tv, futebol ao vivo hoje, onde assistir aos jogos de hoje, calendário de jogos de hoje, programação de futebol" />
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+  <meta name="author" content="Curva da Bola" />
+  <link rel="canonical" href="https://curvadabola.com.br/" />
+
+  <!-- ── Favicon ────────────────────────────────────────── -->
+  <link rel="icon" type="image/png" href="assets/logo.png" />
+  <link rel="apple-touch-icon" href="assets/logo.png" />
+  <meta name="theme-color" content="#009c3b" />
+
+  <!-- ── Open Graph ────────────────────────────────────── -->
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="pt_BR" />
+  <meta property="og:site_name" content="Curva da Bola" />
+  <meta property="og:title" content="Jogos de Hoje ao Vivo | Placar e Resultados da Curva da Bola" />
+  <meta property="og:description"
+    content="Resultados dos jogos de hoje, placar ao vivo minuto a minuto e estatísticas completas. Acompanhe o Brasileirão e Libertadores em tempo real." />
+  <meta property="og:url" content="https://curvadabola.com.br/" />
+  <meta property="og:image" content="https://curvadabola.com.br/assets/logo.png" />
+  <meta property="og:image:width" content="1024" />
+  <meta property="og:image:height" content="1024" />
+
+  <!-- ── Twitter Card ───────────────────────────────────── -->
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Curva da Bola | Jogos Brasileiros Ao Vivo" />
+  <meta name="twitter:description" content="Placares ao vivo, Série A, B e Copa do Brasil." />
+  <meta name="twitter:image" content="https://curvadabola.com.br/assets/logo.png" />
+
+  <!-- ── Schema.org (JSON-LD) ──────────────────────────── -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Curva da Bola",
+    "url": "https://curvadabola.com.br/",
+    "description": "Veja o placar ao vivo dos jogos de futebol de hoje, resultados em tempo real e saiba onde assistir às partidas do Brasileirão, Libertadores e mais.",
+    "inLanguage": "pt-BR",
+    "publisher": {
+      "@type": "Organization",
+      "name": "Curva da Bola",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://curvadabola.com.br/assets/logo.png"
+      }
+    }
+  }
+  </script>
+
+  <!-- ── Performance Optimizations ─────────────────────── -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://hxioxyyptqbdwgoejkar.supabase.co" crossorigin />
+  <link rel="dns-prefetch" href="https://v3.football.api-sports.io" />
+
+  <!-- ── Preload Critical Assets ────────────────────────── -->
+  <link rel="preload" href="assets/logo.png" as="image" fetchpriority="high" />
+  <link rel="preload" href="css/tokens.css" as="style" />
+  <link rel="preload" href="css/layout.css" as="style" />
+
+  <!-- ── Fontes ─────────────────────────────────────────── -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Oswald:wght@500;600;700&display=swap"
+    rel="stylesheet" />
+
+  <!-- ── CSS ────────────────────────────────────────────── -->
+  <link rel="stylesheet" href="css/reset.css" />
+  <link rel="stylesheet" href="css/tokens.css" />
+  <link rel="stylesheet" href="css/layout.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/animations.css" />
+
+  <!-- ── Supabase CDN (defer) ──────────────────────────── -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js" defer></script>
+</head>
+
+<body>
+
+  <!-- HEADER -->
+  <header class="site-header" id="site-header">
+    <div class="container">
+      <div class="header-inner">
+        <a href="/" class="logo" id="logo-link" aria-label="Curva da Bola - Página inicial">
+          <img src="assets/logo.png" alt="Curva da Bola" class="logo-img" id="logo-img" width="38" height="38"
+            fetchpriority="high" />
+          <span class="logo-text">Curva <strong>da Bola</strong></span>
+        </a>
+        <nav class="main-nav" id="main-nav" aria-label="Navegação principal">
+          <button class="nav-btn" data-tab="ontem" id="tab-ontem" aria-selected="false">⏪ Ontem</button>
+          <button class="nav-btn active" data-tab="hoje" id="tab-hoje" aria-selected="true">Hoje</button>
+          <button class="nav-btn" data-tab="amanha" id="tab-amanha" aria-selected="false">Amanhã ⏩</button>
+        </nav>
+        <div class="header-right">
+          <!-- Botão oculto (Economia de API solicitada) -->
+          <button class="sync-btn hidden" id="sync-btn" title="Sincronizar jogos do ano com a API"
+            aria-label="Sincronizar" style="display: none;">
+            🔄 Sincronizar
+          </button>
+          <div class="live-pulse" id="live-indicator" role="status" aria-label="Status ao vivo">
+            <span class="pulse-dot" aria-hidden="true"></span>
+            <span class="pulse-label">AO VIVO</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero" id="hero-section" aria-labelledby="hero-title">
+    <div class="container">
+      <div class="hero-content">
+        <div class="hero-badge" id="hero-badge" aria-live="polite">
+          <span class="badge-dot" aria-hidden="true"></span>
+          <span id="live-count-badge">Carregando...</span>
+        </div>
+        <h1 class="hero-title" id="hero-title">
+          Jogos de Futebol de Hoje<br />
+          <span class="gradient-text">Ao Vivo e Resultados</span>
+        </h1>
+        <p class="hero-subtitle">Placar ao vivo minuto a minuto, estatísticas e onde assistir jogos do Brasileirão, Copa do Brasil e Libertadores.</p>
+      </div>
+      <div class="league-filters" id="league-filters" role="group" aria-label="Filtrar por liga">
+        <button class="filter-chip active" data-league="all" id="filter-all">Todos</button>
+        <button class="filter-chip" data-league="71" id="filter-serie-a">🟢 Série A</button>
+        <button class="filter-chip" data-league="72" id="filter-serie-b">🔵 Série B</button>
+        <button class="filter-chip" data-league="73" id="filter-copa">🟡 Copa do Brasil</button>
+        <button class="filter-chip" data-league="75" id="filter-sul-americana">🟠 Sul-Americana</button>
+        <button class="filter-chip" data-league="13" id="filter-libertadores">🟣 Libertadores</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- MAIN -->
+  <main class="main-content" id="main-content">
+    <div class="container">
+
+      <!-- ONTEM -->
+      <section class="tab-panel" id="panel-ontem" role="tabpanel" aria-labelledby="tab-ontem">
+        <div class="section-header">
+          <h2 class="section-title" id="ontem-date-title">Resultados dos Jogos de Ontem</h2>
+          <span class="section-count" id="ontem-count" aria-live="polite">—</span>
+        </div>
+        <div class="games-grid" id="games-grid-ontem" role="list">
+          <div class="game-card skeleton" aria-hidden="true"></div>
+          <div class="game-card skeleton" aria-hidden="true"></div>
+          <div class="game-card skeleton" aria-hidden="true"></div>
+        </div>
+        <div class="empty-state hidden" id="empty-ontem">
+          <div class="empty-icon" aria-hidden="true">⏪</div>
+          <p class="empty-title">Nenhum jogo ontem</p>
+          <p class="empty-sub">Confira a aba Hoje!</p>
+        </div>
+      </section>
+
+      <!-- HOJE -->
+      <section class="tab-panel active" id="panel-hoje" role="tabpanel" aria-labelledby="tab-hoje">
+        <div class="section-header">
+          <h2 class="section-title" id="today-date-title">Jogos de Hoje ao Vivo e Placares</h2>
+          <span class="section-count" id="hoje-count" aria-live="polite">—</span>
+        </div>
+        <div class="games-grid" id="games-grid-hoje" role="list">
+          <div class="game-card skeleton" aria-hidden="true"></div>
+          <div class="game-card skeleton" aria-hidden="true"></div>
+          <div class="game-card skeleton" aria-hidden="true"></div>
+        </div>
+        <div class="empty-state hidden" id="empty-hoje">
+          <div class="empty-icon" aria-hidden="true">📅</div>
+          <p class="empty-title">Sem jogos hoje</p>
+          <p class="empty-sub">Confira os jogos de amanhã!</p>
+        </div>
+      </section>
+
+      <!-- AMANHÃ -->
+      <section class="tab-panel" id="panel-amanha" role="tabpanel" aria-labelledby="tab-amanha">
+        <div class="section-header">
+          <h2 class="section-title" id="tomorrow-date-title">Programação de Jogos e Horários</h2>
+          <span class="section-count" id="amanha-count" aria-live="polite">—</span>
+        </div>
+        <div class="games-grid" id="games-grid-amanha" role="list">
+          <div class="game-card skeleton" aria-hidden="true"></div>
+          <div class="game-card skeleton" aria-hidden="true"></div>
+          <div class="game-card skeleton" aria-hidden="true"></div>
+        </div>
+        <div class="empty-state hidden" id="empty-amanha">
+          <div class="empty-icon" aria-hidden="true">📅</div>
+          <p class="empty-title">Sem jogos amanhã</p>
+          <p class="empty-sub">Nenhuma partida programada.</p>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="site-footer" id="site-footer">
+    <div class="container">
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <img src="assets/logo.png" alt="Curva da Bola" width="32" height="32" loading="lazy"
+            style="border-radius:50%;" />
+          <span>Curva da Bola</span>
+        </div>
+        <p class="footer-copy">Curva da Bola - Acompanhe os resultados dos jogos do brasileirão hoje e os placares em tempo real do seu time: Flamengo, Palmeiras, São Paulo e Corinthians.</p>
+        <p class="footer-leagues">Série A · Série B · Copa do Brasil · Libertadores</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- CONFIG MODAL (Supabase credentials) -->
+  <div class="config-overlay hidden" id="config-overlay" role="dialog" aria-modal="true" aria-labelledby="config-title">
+    <div class="config-modal" id="config-modal">
+      <div class="config-header">
+        <div class="config-logo">
+          <img src="assets/logo.png" alt="Curva da Bola" width="56" height="56"
+            style="border-radius:50%;margin:0 auto 8px;display:block;" />
+          Curva da Bola
+        </div>
+        <h2 id="config-title">Configurar Supabase</h2>
+        <p>Insira suas credenciais para conectar ao banco de dados</p>
+      </div>
+      <form class="config-form" id="config-form" novalidate>
+        <div class="form-group">
+          <label for="supabase-url">URL do Projeto</label>
+          <input type="url" id="supabase-url" placeholder="https://xxxxxxxx.supabase.co" autocomplete="off" required />
+        </div>
+        <div class="form-group">
+          <label for="supabase-key">Chave Publicável</label>
+          <input type="text" id="supabase-key" placeholder="sb_publishable_..." autocomplete="off" required />
+        </div>
+        <button type="submit" class="btn-primary" id="save-credentials-btn">
+          Conectar ao Supabase
+        </button>
+        <button type="button" class="btn-secondary" id="use-demo-btn">
+          Continuar sem banco de dados
+        </button>
+      </form>
+      <p class="config-note">💡 Suas credenciais ficam salvas só no seu navegador.</p>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast-container" id="toast-container" role="status" aria-live="polite"></div>
+
+  <!-- Scripts (defer = não bloqueia render) -->
+  <script src="js/utils.js" defer></script>
+  <script src="js/config.js" defer></script>
+  <script src="js/supabase.js" defer></script>
+  <script src="js/api.js" defer></script>
+  <script src="js/crest_map.js" defer></script>
+  <script src="js/cards.js" defer></script>
+  <script src="js/realtime.js" defer></script>
+  <script src="js/app.js" defer></script>
+</body>
+
+</html>

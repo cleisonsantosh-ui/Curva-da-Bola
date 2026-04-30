@@ -47,7 +47,7 @@ const CardsService = (() => {
   }
 
   // Team crest HTML
-  function crestHtml(team, side) {
+  function crestHtml(team, side, index = 10) {
     const cName = cleanName(team?.name);
     const initial = cName.charAt(0).toUpperCase();
 
@@ -60,9 +60,11 @@ const CardsService = (() => {
     const finalLogo = localUrl || apiLogo;
 
     if (finalLogo) {
+      const priority = index < 4 ? 'fetchpriority="high"' : '';
       return `
         <div class="team-crest" id="crest-${side}-${team.id || 'x'}">
           <img src="${finalLogo}" alt="Escudo ${team.name}"
+               ${priority}
                loading="lazy"
                onerror="this.parentElement.innerHTML='<div class=\\'crest-fallback-circle\\'>${initial}</div>'"
           />
@@ -152,7 +154,7 @@ const CardsService = (() => {
         <div class="match-body">
           <!-- Home Team -->
           <div class="team-block team-home">
-            ${crestHtml(match.home_team, 'home')}
+            ${crestHtml(match.home_team, 'home', index)}
             <span class="team-name">${cleanName(match.home_team?.name)}</span>
           </div>
 
@@ -161,7 +163,7 @@ const CardsService = (() => {
 
           <!-- Away Team -->
           <div class="team-block team-away">
-            ${crestHtml(match.away_team, 'away')}
+            ${crestHtml(match.away_team, 'away', index)}
             <span class="team-name">${cleanName(match.away_team?.name)}</span>
           </div>
         </div>

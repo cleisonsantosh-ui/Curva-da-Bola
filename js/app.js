@@ -7,13 +7,11 @@ const App = (() => {
   let activeLeague = 'all';
   let allOntemMatches    = [];
   let allTodayMatches    = [];
-  let allTomorrowMatches = [];
   let lastDataHash       = ''; // Para evitar re-renders desnecessários
 
   // Pega as datas ajustadas para o fuso brasileiro (UTC-3) usando DateUtils
   const ontemStr    = () => window.DateUtils.getBRTDateStr(-1);
   const todayStr    = () => window.DateUtils.getBRTDateStr(0);
-  const tomorrowStr = () => window.DateUtils.getBRTDateStr(1);
 
   function prettyDate(dateStr) {
     const [y, m, d] = dateStr.split('-').map(Number);
@@ -44,8 +42,11 @@ const App = (() => {
   }
 
   function filterMatches(matches) {
-    if (activeLeague === 'all') return matches;
-    return matches.filter(m => String(m.league_id) === String(activeLeague));
+    if (!activeLeague || activeLeague === 'all') return matches;
+    return matches.filter(m => {
+      if (!m.league_id) return false;
+      return String(m.league_id) === String(activeLeague);
+    });
   }
 
   function clearGrid(id) {
@@ -72,9 +73,9 @@ const App = (() => {
     const currentHash = JSON.stringify({
       tab: activeTab,
       league: activeLeague,
-      count: allOntemMatches.length + allTodayMatches.length + allTomorrowMatches.length,
+      count: allOntemMatches.length + allTodayMatches.length,
       // Pega os IDs e scores do topo para detectar mudanças rápidas
-      top: allTodayMatches.slice(0, 5).map(m => `${m.id}-${m.score_home}-${m.score_away}`).join('|')
+      top: allTodayMatches.map(m => `${m.id}-${m.score_home}-${m.score_away}-${m.status}-${m.minute}`).join('|').slice(0, 500)
     });
 
     if (!force && currentHash === lastDataHash) return;
@@ -88,9 +89,6 @@ const App = (() => {
     } else if (activeTab === 'hoje') {
       const filtered = sortMatches(filterMatches(allTodayMatches));
       renderGrid('games-grid-hoje', 'empty-hoje', 'hoje-count', allTodayMatches, filtered);
-    } else if (activeTab === 'amanha') {
-      const filtered = sortMatches(filterMatches(allTomorrowMatches));
-      renderGrid('games-grid-amanha', 'empty-amanha', 'amanha-count', allTomorrowMatches, filtered);
     }
 
     // Atualiza apenas os contadores das outras abas (leve)
@@ -100,37 +98,37 @@ const App = (() => {
   function updateCountsOnly() {
     const counts = {
       ontem: filterMatches(allOntemMatches).length,
-      hoje: filterMatches(allTodayMatches).length,
-      amanha: filterMatches(allTomorrowMatches).length
+      hoje: filterMatches(allTodayMatches).length
     };
     if (document.getElementById('ontem-count')) document.getElementById('ontem-count').textContent = `${counts.ontem} jogo${counts.ontem !== 1 ? 's' : ''}`;
     if (document.getElementById('hoje-count')) document.getElementById('hoje-count').textContent = `${counts.hoje} jogo${counts.hoje !== 1 ? 's' : ''}`;
-    if (document.getElementById('amanha-count')) document.getElementById('amanha-count').textContent = `${counts.amanha} jogo${counts.amanha !== 1 ? 's' : ''}`;
   }
 
   async function loadMatches() {
-    const [ontemData, todayData, tomorrowData] = await Promise.all([
+    const [ontemData, todayData] = await Promise.all([
       ApiService.getMatchesForDate(ontemStr()),
       ApiService.getMatchesForDate(todayStr()),
-      ApiService.getMatchesForDate(tomorrowStr()),
     ]);
     allOntemMatches    = ontemData    || [];
     allTodayMatches    = todayData    || [];
-    allTomorrowMatches = tomorrowData || [];
 
     // Instant Cache: Salva os dados no localStorage para o próximo carregamento
     saveToInstantCache();
 
     const ontEl = document.getElementById('ontem-date-title');
     const todEl = document.getElementById('today-date-title');
-    const tomEl = document.getElementById('tomorrow-date-title');
     
     if (ontEl) ontEl.textContent = `Ontem — ${prettyDate(ontemStr())}`;
     if (todEl) todEl.textContent = `Hoje — ${prettyDate(todayStr())}`;
-    if (tomEl) tomEl.textContent = `Amanhã — ${prettyDate(tomorrowStr())}`;
     
     rerenderAll();
     refreshLiveCount();
+    
+    // 🎯 Se a aba ativa estiver vazia após carregar, e pudermos pedir, tenta um sync rápido
+    if (activeTab === 'hoje' && allTodayMatches.length === 0 && RequestManager.canRequest()) {
+        console.info('[App] Aba hoje vazia. Tentando sync forçado...');
+        runSmartSync();
+    }
   }
 
   function refreshLiveCount() {
@@ -165,6 +163,28 @@ const App = (() => {
     },
     canRequest() {
       return this.getStats().count < 100;
+    },
+    // 🎯 GlobalSync: Protege o limite de 100 req/dia verificando o banco antes de gastar
+    async shouldSyncGlobal(forceIfEmpty = true) {
+      try {
+        if (forceIfEmpty && allTodayMatches.length === 0) return true;
+        if (allTodayMatches.length === 0) return false;
+
+        const timestamps = allTodayMatches
+          .map(m => m.updated_at ? new Date(m.updated_at).getTime() : 0)
+          .filter(t => t > 0);
+        
+        if (timestamps.length === 0) return true;
+        
+        const lastUpdate = Math.max(...timestamps);
+        const diffMin = (Date.now() - lastUpdate) / 60000;
+        
+        console.info(`[GlobalSync] Dados no banco atualizados há ${diffMin.toFixed(1)} min.`);
+        return diffMin > 15;
+      } catch (e) {
+        console.warn('[GlobalSync] Erro ao checar banco, forçando sync:', e);
+        return true;
+      }
     }
   };
 
@@ -172,7 +192,6 @@ const App = (() => {
     const data = {
       ontem: allOntemMatches,
       hoje: allTodayMatches,
-      amanha: allTomorrowMatches,
       timestamp: Date.now()
     };
     localStorage.setItem('instant_cache_matches', JSON.stringify(data));
@@ -188,7 +207,6 @@ const App = (() => {
 
       allOntemMatches = data.ontem || [];
       allTodayMatches = data.hoje || [];
-      allTomorrowMatches = data.amanha || [];
       console.info('[App] Instant Cache: Carregado do armazenamento local.');
       return true;
     } catch (e) { return false; }
@@ -241,9 +259,8 @@ const App = (() => {
 
   function cleanOldCache() {
     const today = todayStr();
-    const tom   = tomorrowStr();
     Object.keys(localStorage)
-      .filter(k => k.startsWith('last_fetch_') && k !== `last_fetch_${today}` && k !== `last_fetch_${tom}`)
+      .filter(k => k.startsWith('last_fetch_') && k !== `last_fetch_${today}`)
       .forEach(k => localStorage.removeItem(k));
   }
 
@@ -264,10 +281,20 @@ const App = (() => {
     });
     
     if (hasLiveGames || hasUpcomingGames) {
-      console.info('[App] SmartSync: Jogos ativos detectados. Atualizando...');
-      RequestManager.increment();
-      await ApiService.syncLiveMatches();
-      await loadMatches();
+      // 🎯 Fix: Mesmo em jogos ao vivo, só gasta API se o banco não tiver sido atualizado recentemente por outro usuário
+      if (await RequestManager.shouldSyncGlobal(false)) {
+        console.info('[App] SmartSync: Jogos ativos e banco desatualizado. Sincronizando...');
+        RequestManager.increment();
+        const liveData = await ApiService.syncLiveMatches();
+        if (liveData && liveData.length > 0) {
+          // Mescla dados ao vivo no estado atual imediatamente
+          allTodayMatches = mergeMatches(allTodayMatches, liveData);
+          saveToInstantCache();
+          rerenderAll();
+        }
+      } else {
+        console.info('[App] SmartSync: Jogos ativos mas banco já atualizado por outro usuário. Pulando...');
+      }
     } else {
       console.info('[App] SmartSync: Nenhum jogo ativo ou próximo. Pulando sync para economizar API.');
     }
@@ -279,48 +306,77 @@ const App = (() => {
     if (unfinished.length > 0 && RequestManager.canRequest()) {
       console.info(`[App] Cleanup: Sincronizando ${unfinished.length} jogos de ontem.`);
       RequestManager.increment();
-      await ApiService.syncDate(ontemStr());
-      await loadMatches();
+      const data = await ApiService.syncDate(ontemStr());
+      if (data && data.length > 0) {
+        allOntemMatches = data;
+        rerenderAll();
+      }
     }
   }
 
   async function init() {
-    SupabaseService.loadSavedCredentials();
-    const sbClient = SupabaseService.init();
-    bindEvents();
-    setupConfigModal();
-
-    // 🚀 INSTANT LOAD: Tenta carregar do cache local antes de buscar no Supabase
-    if (loadFromInstantCache()) {
-      rerenderAll(true);
-      refreshLiveCount();
-    }
-
-    if (sbClient) {
-      RealtimeService.subscribe();
-      await loadMatches();
-      cleanOldCache();
-      
-      // 1. Limpeza de jogos de ontem que não terminaram
-      await cleanupYesterday();
-
-      // 2. Sincronização Geral: Se for o primeiro acesso no dia ou banco vazio
-      const lastFullSync = localStorage.getItem('last_full_sync');
-      if ((lastFullSync !== todayStr() || allTodayMatches.length === 0) && RequestManager.canRequest()) {
-        console.info('[App] Executando Sincronização Diária...');
-        // 3 requisições: Ontem, Hoje, Amanhã
-        RequestManager.increment(); RequestManager.increment(); RequestManager.increment();
-        await ApiService.syncLeagues();
-        localStorage.setItem('last_full_sync', todayStr());
-        await loadMatches();
-      }
-
-      // 3. SmartSync a cada 5 minutos (Mais frequente que antes, mas SELETIVO)
-      setInterval(() => runSmartSync(), 5 * 60 * 1000); 
-    }
+    console.info('[App] Inicializando...');
     
-    // Atualiza a UI (leitura do Supabase) a cada 30s
-    setInterval(() => loadMatches(), 30_000);
+    try {
+      // 1. Carregamento Base e UI (Sempre executa)
+      cleanOldCache();
+      loadFromInstantCache();
+      bindEvents();
+      setupConfigModal();
+      rerenderAll(); 
+
+      // 2. Notícias (Independente do banco)
+      try {
+        if (window.NewsService) window.NewsService.renderNews('news-grid');
+      } catch (e) { console.error('[App] Erro nas notícias:', e); }
+
+      // 3. Supabase e Sync (Pode falhar sem quebrar o resto)
+      try {
+        SupabaseService.loadSavedCredentials();
+        const sbClient = SupabaseService.init();
+        
+        if (sbClient) {
+          console.info('[App] Supabase conectado.');
+          RealtimeService.subscribe();
+          await loadMatches(); 
+          await cleanupYesterday();
+
+          if (await RequestManager.shouldSyncGlobal() && RequestManager.canRequest()) {
+            console.info('[App] Sincronização necessária...');
+            const data = await ApiService.syncLeagues();
+            if (data) {
+              if (data[ontemStr()]) allOntemMatches = data[ontemStr()];
+              if (data[todayStr()]) allTodayMatches = data[todayStr()];
+              saveToInstantCache();
+              rerenderAll();
+            }
+          }
+        } else {
+          console.warn('[App] Supabase não configurado ou indisponível.');
+          // Tenta carregar matches mesmo sem Supabase (se houver cache)
+          await loadMatches(); 
+        }
+      } catch (e) { console.error('[App] Erro no Supabase/Sync:', e); }
+
+      // 4. Agendamentos de Intervalo
+      setInterval(() => runSmartSync(), 5 * 60 * 1000); 
+      setInterval(() => {
+        loadMatches().catch(e => console.warn('[App] Erro no refresh:', e));
+      }, 25_000);
+
+    } catch (e) {
+      console.error('[App] Erro crítico:', e);
+      alert('Erro ao carregar o site. Por favor, recarregue a página.');
+    }
+  }
+
+  function mergeMatches(oldList, newList) {
+    if (!newList || !Array.isArray(newList)) return oldList;
+    const map = new Map(oldList.map(m => [m.api_id, m]));
+    newList.forEach(m => {
+      if (m && m.api_id) map.set(m.api_id, m);
+    });
+    return Array.from(map.values());
   }
 
   return { init, refreshLiveCount, reloadTodayIfNeeded };

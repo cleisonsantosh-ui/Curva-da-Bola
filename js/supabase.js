@@ -29,8 +29,12 @@ const SupabaseService = (() => {
       console.warn('[Supabase] No credentials configured.');
       return null;
     }
+    if (!window.supabase) {
+      console.error('[Supabase] Biblioteca não carregada (CDN Offline).');
+      return null;
+    }
     try {
-      const client = supabase.createClient(url, key);
+      const client = window.supabase.createClient(url, key);
       window.SupabaseClient = client;
       console.info('[Supabase] Client initialised ✅');
       return client;

@@ -9,7 +9,7 @@ window.FUT_CONFIG = {
   SUPABASE_ANON_KEY: 'sb_publishable_q4po9Quo3QpCOj14kyjLrw_MYbcdLu7',
 
   // ── API-Football ──────────────────────────────────────────
-  API_FOOTBALL_KEY: '999d134e9c533f8befbfa34d20d204a1',
+  API_FOOTBALL_KEY: '1604b9d143ebcbac09d491368a8cad6a',
   API_FOOTBALL_BASE: 'https://v3.football.api-sports.io',
 
   // ── Ligas Brasileiras ─────────────────────────────────────

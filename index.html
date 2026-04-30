@@ -10,7 +10,7 @@
   <meta name="description"
     content="Resultados dos jogos de hoje no futebol brasileiro, placar ao vivo minuto a minuto e onde assistir aos jogos. Acompanhe Brasileirão, Copa do Brasil e Libertadores." />
   <meta name="keywords"
-    content="jogo hoje, jogos de hoje, futebol hoje, resultados de hoje, resultado jogo hoje, placar ao vivo, jogos de futebol de hoje, resultados dos jogos de hoje, jogos de hoje ao vivo, jogos de hoje na tv, futebol ao vivo hoje, onde assistir aos jogos de hoje, calendário de jogos de hoje, programação de futebol" />
+    content="jogos de hoje, placar ao vivo, jogos de hoje ao vivo, jogo do flamengo, jogo do palmeiras, jogo do sao paulo, jogo do corinthians, jogo do vasco, jogo do santos, jogo do gremio, jogo do internacional, jogo do atletico mineiro, jogo do cruzeiro, jogo do fluminense, jogo do botafogo, jogo do bahia, jogo do vitoria, jogo do athletico paranaense, jogo do fortaleza, jogo do red bull bragantino, jogo do cuiaba, jogo do juventude, jogo do atletico goianiense, jogo do criciuma, jogo do goias, jogo do coritiba, jogo do america mineiro, jogo do sport, jogo do ceara, jogo do operario, jogo do vila nova, jogo do novorizontino, jogo do avai, jogo do paysandu, jogo do amazonas, jogo do botafogo sp, jogo do chapecoense, jogo do ponte preta, jogo do crb, jogo do ituano, jogo do brusque, jogo do guarani, jogo do mirassol" />
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
   <meta name="author" content="Curva da Bola" />
   <link rel="canonical" href="https://curvadabola.online/" />
@@ -87,11 +87,11 @@
 
   <!-- Microsoft Clarity -->
   <script type="text/javascript">
-      (function(c,l,a,r,i,t,y){
-          c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-          t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-          y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-      })(window, document, "clarity", "script", "whc1qxf0ql");
+    (function (c, l, a, r, i, t, y) {
+      c[a] = c[a] || function () { (c[a].q = c[a].q || []).push(arguments) };
+      t = l.createElement(r); t.async = 1; t.src = "https://www.clarity.ms/tag/" + i;
+      y = l.getElementsByTagName(r)[0]; y.parentNode.insertBefore(t, y);
+    })(window, document, "clarity", "script", "whc1qxf0ql");
   </script>
 </head>
 
@@ -109,7 +109,7 @@
         <nav class="main-nav" id="main-nav" aria-label="Navegação principal">
           <button class="nav-btn" data-tab="ontem" id="tab-ontem" aria-selected="false">⏪ Ontem</button>
           <button class="nav-btn active" data-tab="hoje" id="tab-hoje" aria-selected="true">Hoje</button>
-          <button class="nav-btn" data-tab="amanha" id="tab-amanha" aria-selected="false">Amanhã ⏩</button>
+          <a href="#news-section" class="nav-btn" id="link-noticias">Notícias</a>
         </nav>
         <div class="header-right">
           <!-- Botão oculto (Economia de API solicitada) -->
@@ -152,6 +152,11 @@
     </div>
   </section>
 
+  <!-- ADSENSE: Top Banner -->
+  <div class="ad-unit top-ad" style="margin: 1rem auto; text-align: center; min-height: 20px;">
+    <!-- Cole seu código do AdSense aqui quando for aprovado -->
+  </div>
+
   <!-- MAIN -->
   <main class="main-content" id="main-content">
     <div class="container">
@@ -192,21 +197,17 @@
         </div>
       </section>
 
-      <!-- AMANHÃ -->
-      <section class="tab-panel" id="panel-amanha" role="tabpanel" aria-labelledby="tab-amanha">
+      <!-- NOTÍCIAS (AdSense Boost) -->
+      <section class="news-section" id="news-section" aria-labelledby="news-title">
         <div class="section-header">
-          <h2 class="section-title" id="tomorrow-date-title">Programação de Jogos e Horários</h2>
-          <span class="section-count" id="amanha-count" aria-live="polite">—</span>
+          <h2 class="section-title" id="news-title">Últimas Notícias do Futebol</h2>
+          <a href="https://ge.globo.com/" target="_blank" class="view-all">Ver tudo no GE</a>
         </div>
-        <div class="games-grid" id="games-grid-amanha" role="list">
-          <div class="game-card skeleton" aria-hidden="true"></div>
-          <div class="game-card skeleton" aria-hidden="true"></div>
-          <div class="game-card skeleton" aria-hidden="true"></div>
-        </div>
-        <div class="empty-state hidden" id="empty-amanha">
-          <div class="empty-icon" aria-hidden="true">📅</div>
-          <p class="empty-title">Sem jogos amanhã</p>
-          <p class="empty-sub">Nenhuma partida programada.</p>
+        <div class="news-grid" id="news-grid">
+          <!-- Skeletons -->
+          <div class="news-card skeleton-news"></div>
+          <div class="news-card skeleton-news"></div>
+          <div class="news-card skeleton-news"></div>
         </div>
       </section>
 
@@ -225,6 +226,12 @@
         <p class="footer-copy">Curva da Bola - Acompanhe os resultados dos jogos do brasileirão hoje e os placares em
           tempo real do seu time: Flamengo, Palmeiras, São Paulo e Corinthians.</p>
         <p class="footer-leagues">Série A · Série B · Copa do Brasil · Libertadores</p>
+        <div class="footer-links"
+          style="margin-top: 1rem; display: flex; gap: 1rem; justify-content: center; font-size: 0.8rem;">
+          <a href="sobre.html" style="color: var(--text-muted);">Sobre Nós</a>
+          <a href="privacidade.html" style="color: var(--text-muted);">Privacidade</a>
+          <a href="termos.html" style="color: var(--text-muted);">Termos</a>
+        </div>
       </div>
     </div>
   </footer>
@@ -272,6 +279,7 @@
   <script src="js/crest_map.js" defer></script>
   <script src="js/cards.js" defer></script>
   <script src="js/realtime.js" defer></script>
+  <script src="js/news.js" defer></script>
   <script src="js/app.js" defer></script>
 
   <!-- PWA Service Worker Registration -->

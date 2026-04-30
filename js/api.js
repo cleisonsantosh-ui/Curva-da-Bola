@@ -17,10 +17,17 @@ const ApiService = (() => {
       minute:         fixture.status.elapsed ?? null,
       score_home:     goals.home,
       score_away:     goals.away,
-      home_team_name: teams.home.name,
-      home_team_logo: teams.home.logo,
-      away_team_name: teams.away.name,
-      away_team_logo: teams.away.logo,
+      home_team: {
+        name: teams.home.name,
+        logo: teams.home.logo,
+        id:   teams.home.id
+      },
+      away_team: {
+        name: teams.away.name,
+        logo: teams.away.logo,
+        id:   teams.away.id
+      },
+      updated_at: new Date().toISOString()
     };
   }
 
@@ -36,14 +43,13 @@ const ApiService = (() => {
     const client = window.SupabaseClient;
     if (!client) return null;
     try {
-      // Simplificado: Busca jogos que ocorrem dentro do dia especificado no horário de Brasília
-      // Como o banco está em UTC, comparamos com o intervalo equivalente em UTC:
+      // 🎯 Fix: Busca jogos que ocorrem dentro do dia especificado no horário de Brasília (UTC-3)
       // 00:00 BRT = 03:00 UTC | 23:59 BRT = 02:59 UTC (dia seguinte)
       const { data, error } = await client
         .from('matches')
         .select('*')
         .gte('kickoff', `${dateStr}T03:00:00+00:00`)
-        .lte('kickoff', `${dateStr}T23:59:59-03:00`) // O Supabase costuma inferir o offset corretamente
+        .lte('kickoff', `${dateStr}T23:59:59-03:00`) 
         .order('kickoff', { ascending: true });
 
       if (error) { console.error('[Supabase] Erro:', error); return null; }
@@ -61,14 +67,28 @@ const ApiService = (() => {
     const client = window.SupabaseClient;
     if (!client || !matches?.length) return;
 
-    // Tenta upsert. Se falhar, avisa que as colunas podem estar faltando.
-    const { error } = await client.from('matches').upsert(matches, { onConflict: 'api_id' });
+    // Converte de volta para o formato chato do banco (Flat Columns)
+    const flatMatches = matches.map(m => ({
+      api_id:         m.api_id,
+      league_id:      m.league_id,
+      league_name:    m.league_name,
+      venue:          m.venue,
+      kickoff:        m.kickoff,
+      status:         m.status,
+      minute:         m.minute,
+      score_home:     m.score_home,
+      score_away:     m.score_away,
+      home_team_name: m.home_team.name,
+      home_team_logo: m.home_team.logo,
+      away_team_name: m.away_team.name,
+      away_team_logo: m.away_team.logo,
+      updated_at:     m.updated_at
+    }));
+
+    const { error } = await client.from('matches').upsert(flatMatches, { onConflict: 'api_id' });
     
     if (error) {
       console.error('[Supabase] Erro Crítico no Upsert:', error.message);
-      if (error.message.includes('column') || error.message.includes('not found')) {
-        ToastService.show('🚨 Erro no Banco: Colunas faltando! Execute o SQL de migração.', 'error', 10000);
-      }
     }
   }
 
@@ -85,13 +105,18 @@ const ApiService = (() => {
       const json = await res.json();
       const fixtures = json?.response || [];
       
-      // Filtra apenas times do Brasil
-      const brFixtures = fixtures.filter(f => f.league.country === 'Brazil');
-      if (brFixtures.length > 0) {
-        console.info(`[Sync] Atualizando ${brFixtures.length} jogos ao vivo.`);
-        await upsertMatches(brFixtures.map(normFixture));
-        return true;
+      // 🎯 Fix: Inclui TUDO do Brasil + Ligas Internacionais configuradas (Liberta/Sula)
+      const allowedLeagues = window.FUT_CONFIG.BRAZILIAN_LEAGUE_IDS;
+      const relevantFixtures = fixtures.filter(f => 
+        f.league.country === 'Brazil' || allowedLeagues.includes(f.league.id)
+      );
+      
+      if (relevantFixtures.length > 0) {
+        console.info(`[Sync] Atualizando ${relevantFixtures.length} jogos relevantes ao vivo.`);
+        await upsertMatches(relevantFixtures.map(normFixture));
+        return relevantFixtures.map(normFixture); // 🎯 Retorna os dados para renderização imediata
       }
+      return [];
     } catch (e) {
       console.error('[Sync] Erro no Live Sync:', e);
     }
@@ -109,15 +134,18 @@ const ApiService = (() => {
       });
       const json = await res.json();
       const fixtures = json?.response || [];
-      const brFixtures = fixtures.filter(f => f.league.country === 'Brazil');
-      if (brFixtures.length > 0) {
-        await upsertMatches(brFixtures.map(normFixture));
-        return brFixtures.length;
+      const allowedLeagues = window.FUT_CONFIG.BRAZILIAN_LEAGUE_IDS;
+      const relevantFixtures = fixtures.filter(f => 
+        f.league.country === 'Brazil' || allowedLeagues.includes(f.league.id)
+      );
+      if (relevantFixtures.length > 0) {
+        await upsertMatches(relevantFixtures.map(normFixture));
+        return relevantFixtures.map(normFixture); // 🎯 Retorna os dados
       }
     } catch (e) {
       console.error(`[Sync] Erro ao sincronizar data ${d}:`, e);
     }
-    return 0;
+    return [];
   }
 
   // 🔄 SYNC ULTIMATE: Pega tudo de Ontem, Hoje e Amanhã
@@ -130,12 +158,14 @@ const ApiService = (() => {
 
     const dates = [
       window.DateUtils.getBRTDateStr(-1), // Ontem
-      window.DateUtils.getBRTDateStr(0),  // Hoje
-      window.DateUtils.getBRTDateStr(1)   // Amanhã
+      window.DateUtils.getBRTDateStr(0)   // Hoje
     ];
 
+    const results = {};
     for (const d of dates) {
-      totalSaved += await syncDate(d);
+      const data = await syncDate(d);
+      totalSaved += data.length;
+      results[d] = data;
     }
 
     if (totalSaved > 0) {
@@ -143,6 +173,7 @@ const ApiService = (() => {
     } else {
       ToastService.show('⚠️ Calendário atualizado (nenhum jogo novo).', 'warning');
     }
+    return results; // 🎯 Retorna objeto com dados por data
   }
 
   async function getMatchesForDate(dateStr) {
